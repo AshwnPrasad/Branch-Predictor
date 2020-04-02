@@ -1,0 +1,455 @@
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class branch_prediction
+{
+public:
+    unsigned int m2bimodal;
+    unsigned int btbsize;
+    unsigned int btbassoc;
+    int no_predictions;
+    int no_mispredictions;
+    string trace;
+    unsigned int program_counter;
+    unsigned int pc_shift;
+    unsigned int table_index_bimodal;
+    char outcome;
+    float rate_b;
+    vector<unsigned int>  prediction_table_b;
+    string predictiontype;
+    unsigned int mask;
+    unsigned int size_b;
+    char predicted_outcome;
+    string disp;
+    int init;
+
+    void bimodal_execute();
+    void bimodal_print(int init);
+
+    unsigned int m1;
+    unsigned int n;
+    unsigned int global_register;
+    unsigned int mask_g1;
+    unsigned int mask_g2;
+    unsigned int sub_g;
+    unsigned int gshare_size;
+    unsigned int g1_sub;
+    unsigned int g2_sub;
+    vector<int> prediction_table_gshare;
+    unsigned int gshare_pos;
+    unsigned int g_shift;
+    unsigned int m1_global_reg;
+    unsigned int xor_result;
+    unsigned int index_gshare;
+    float rate_g;
+
+    void gshare_execute();
+    void gshare_print(int init);
+
+    unsigned int k;
+    unsigned int s1;
+    unsigned int s2;
+    unsigned int size_hybrid;
+    unsigned int mask_hybrid;
+    vector<unsigned int>  prediction_table_h;
+    unsigned int index_hybrid;
+    char prediction_g,prediction_b,prediction_h;
+    float rate_h;
+    void hybrid_print();
+    void hybrid_execute();
+};
+
+void branch_prediction::hybrid_print()
+{
+	float a,b;
+	a= no_mispredictions;
+	 b = no_predictions;
+	  rate_h= float(a / b);
+	cout << "COMMAND" << endl;
+	    cout<<disp<<endl;
+	    cout << "OUTPUT" << endl;
+	    cout << "number of predictions: " << no_predictions << endl;
+	    cout << "number of mispredictions: " << no_mispredictions<<endl;
+	    cout << " misprediction rate: ";
+	    printf("%.2f%%\n", rate_h * 100);
+	    cout<<"FINAL CHOOSER CONTENTS"<<endl;
+	    for (unsigned int i = 0; i < size_hybrid; i++)
+	    cout << dec <<i << " " << prediction_table_h[i] << endl;
+}
+
+void branch_prediction::hybrid_execute()
+{
+	pc_shift = program_counter >> 2;
+	index_hybrid = pc_shift & mask_hybrid;
+
+
+	no_predictions++;
+	    if (prediction_table_h[index_hybrid] >= 2)
+	    {
+	    	if (prediction_table_gshare[index_gshare] >= 2)
+	    	        prediction_g = 't';
+	    	    else
+	    	    	prediction_g = 'n';
+
+	    	    if (outcome == 't' && prediction_table_gshare[index_gshare] < 3)
+	    	    {
+	    	    	prediction_table_gshare[index_gshare]++;
+	    	    }
+	    	    else if (outcome == 'n' && prediction_table_gshare[index_gshare] > 0)
+	    	    {
+	    	    	prediction_table_gshare[index_gshare]--;
+	    	    }
+
+	    	    if (prediction_table_b[table_index_bimodal] >= 2)
+	    	    	prediction_b= 't';
+	    	        else
+	    	        	prediction_b= 'n';
+
+
+	    	    prediction_h=prediction_g;
+
+	    }
+	    else
+	    {
+	    	if (prediction_table_b[table_index_bimodal] >= 2)
+	    		prediction_b = 't';
+	    	    else
+	    	    	prediction_b = 'n';
+	    	    if (outcome == 't' && prediction_table_b[table_index_bimodal]< 3)
+	    	    	prediction_table_b[table_index_bimodal]++;
+	    	    else if (outcome == 'n' && prediction_table_b[table_index_bimodal] > 0)
+	    	    	prediction_table_b[table_index_bimodal]--;
+
+
+	    	    if (prediction_table_gshare[index_gshare] >= 2)
+	    	    	prediction_g = 't';
+	    	        else
+	    	        	prediction_g = 'n';
+
+
+	    	    prediction_h=prediction_b;
+
+	    }
+	    if ((prediction_g == outcome) && (prediction_b != outcome))
+	    {
+	        if (prediction_table_h[index_hybrid] < 3)
+	        	prediction_table_h[index_hybrid]++;
+	    }
+	    else if ((prediction_g != outcome) && (prediction_b == outcome))
+	    {
+	        if (prediction_table_h[index_hybrid] > 0)
+	        	prediction_table_h[index_hybrid]--;
+	    }
+	    if (prediction_h != outcome)
+	        no_mispredictions++;
+	    if (outcome == 't')
+	    {
+	        global_register = global_register >> 1;
+	        global_register = global_register | (1 << (n - 1));
+	    }
+	    else
+	    {
+	        global_register = global_register >> 1;
+	    }
+}
+
+void branch_prediction::bimodal_print(int init)
+{
+	if(init ==0)
+		    {
+			  float a,b;
+			   a = no_mispredictions;
+			   b = no_predictions;
+			   rate_b = float(a / b);
+		        cout << "COMMAND" << endl;
+		        cout<<disp<<endl;
+		        cout << "OUTPUT" << endl;
+		        cout << "number of predictions: " << no_predictions << endl;
+		        cout << "number of mispredictions: " << no_mispredictions<< endl;
+		        cout << " misprediction rate: ";
+		        printf("%.2f%%\n", rate_b * 100);
+		        cout << "FINAL BIMODAL CONTENTS" << endl;
+		        for (unsigned int i = 0; i < size_b; i++)
+		        cout << dec <<i << " " << prediction_table_b[i] << endl;
+		    }
+		    if(init ==1)
+		    {
+		        cout << "FINAL BIMODAL CONTENTS" << endl;
+		        for (unsigned int i = 0; i < size_b; i++)
+		        cout << dec <<i << " " << prediction_table_b[i] << endl;
+		    }
+}
+
+
+void branch_prediction::bimodal_execute()
+{
+    pc_shift = program_counter >> 2;
+    table_index_bimodal=pc_shift & mask;
+
+        no_predictions++;
+
+        if (prediction_table_b[table_index_bimodal]>=2)
+            predicted_outcome = 't';
+        else
+        	predicted_outcome = 'n';
+
+        if (outcome == 't' && prediction_table_b[table_index_bimodal] < 3)
+        	prediction_table_b[table_index_bimodal]++;
+        else if (outcome == 'n' && prediction_table_b[table_index_bimodal] > 0)
+        	prediction_table_b[table_index_bimodal]--;
+
+        if (predicted_outcome != outcome)
+            no_mispredictions++;
+}
+
+void branch_prediction::gshare_execute()
+{
+		pc_shift = program_counter >> 2;
+	    gshare_pos= pc_shift & mask_g1;
+	    g_shift= gshare_pos>> sub_g;
+	    m1_global_reg = global_register & mask_g1;
+	    xor_result= g_shift ^ m1_global_reg;
+	    index_gshare= (xor_result << sub_g | (pc_shift & mask_g2));
+
+	    	int temp_n = n;
+	        no_predictions++;
+	        if (prediction_table_gshare[index_gshare] >= 2)
+	        	predicted_outcome = 't';
+	        else
+	        	predicted_outcome = 'n';
+	        if (outcome == 't' && prediction_table_gshare[index_gshare] < 3)
+	        {
+	        	prediction_table_gshare[index_gshare]++;
+	        }
+	        else if (outcome == 'n' && prediction_table_gshare[index_gshare] > 0)
+	        {
+	        	prediction_table_gshare[index_gshare]--;
+	        }
+	        if (predicted_outcome!= outcome)
+	            no_mispredictions++;
+	        if (outcome == 't')
+	        {
+	            global_register = global_register >> 1;
+	            global_register = global_register | (1 << (temp_n - 1));
+	        }
+	        else
+	        {
+	            global_register = global_register >> 1;
+	        }
+
+}
+
+void branch_prediction::gshare_print(int init)
+{
+	if(init == 0)
+	    {
+			float a,b;
+			a= no_mispredictions;
+			 b = no_predictions;
+			 rate_g= float(a / b);
+	        cout << "COMMAND" << endl;
+	        cout<<disp<<endl;
+	        cout << "OUTPUT" << endl;
+	        cout << "number of predictions: " << no_predictions << endl;
+	        cout << "number of mispredictions: " << no_mispredictions<<endl;
+	cout << " misprediction rate: ";
+	printf("%.2f%%\n", rate_g * 100);
+	        cout << "FINAL GSHARE CONTENTS" << endl;
+	        for (unsigned int i = 0; i < gshare_size; i++)
+	        cout <<dec << i << " " << prediction_table_gshare[i] << endl;
+	    }
+	    if(init==1)
+	    {
+	        cout << "FINAL GSHARE CONTENTS" << endl;
+	        for (unsigned int i = 0; i < gshare_size; i++)
+	        cout << dec <<i << " " << prediction_table_gshare[i] << endl;
+	    }
+}
+
+
+
+int main(int argc, char **argv)
+{
+    branch_prediction bimodal;
+    branch_prediction gshare;
+    branch_prediction hybrid;
+    ifstream trace_file;
+
+
+
+    if (argc == 6)
+    {
+        if ((strcmp(argv[1], "bimodal") == 0) && (atoi(argv[3]) == 0)) // Type: Bimodal Prediction
+        {
+        	bimodal.predictiontype=string(argv[1]);
+        	        bimodal.m2bimodal=atoi(argv[2]);
+        	        bimodal.btbsize=atoi(argv[3]);
+        	        bimodal.btbassoc=atoi(argv[4]);
+        	        bimodal.trace=string(argv[5]);
+        	        bimodal.size_b=pow(2,bimodal.m2bimodal);
+        	        bimodal.mask=bimodal.size_b-1;
+        	        bimodal.prediction_table_b.resize(bimodal.size_b);
+        	        bimodal.disp = argv[0] ;
+        	        bimodal.disp  = bimodal.disp  + ' ' + argv[1] + ' ' + argv[2] + ' '+argv[3] + ' '+argv[4] + ' '+argv[5];
+        	        bimodal.no_predictions = 0;
+        	        bimodal.no_mispredictions = 0;
+
+
+
+        	        	for(unsigned int i=0;i<bimodal.size_b;i++)
+        	        	{
+        	        		bimodal.prediction_table_b[i]=2;
+        	        	}
+            trace_file.open(argv[5]);
+            if (trace_file.is_open())
+            {
+            	while(trace_file >> hex >> bimodal.program_counter >> bimodal.outcome)
+            	           {
+
+            	        	   bimodal.bimodal_execute();
+            	           }
+            }
+        }
+    }
+    if ((strcmp(argv[1], "bimodal") == 0) && (atoi(argv[3]) == 0))
+                {
+                    bimodal.init = 0;
+                    bimodal.bimodal_print(0);
+                }
+
+    if (argc == 7)
+        {
+            if ((strcmp(argv[1], "gshare") == 0) && (atoi(argv[4]) == 0)) //Type: Gshare Prediction
+            {
+
+            	gshare.predictiontype = string(argv[1]);
+                gshare.m1 = atoi(argv[2]);
+                gshare.n = atoi(argv[3]);
+                gshare.btbsize= atoi(argv[4]);
+                gshare.btbassoc= atoi(argv[5]);
+                gshare.trace= string(argv[6]);
+                gshare.disp= argv[0] ;
+                gshare.disp= gshare.disp + ' ' + argv[1] + ' ' + argv[2] + ' '+argv[3] + ' '+argv[4] + ' '+argv[5]+ ' '+argv[6];
+                gshare.no_mispredictions = 0;
+                gshare.no_predictions = 0;
+                gshare.global_register = 0;
+                gshare.g1_sub = pow(2, gshare.m1);
+                gshare.mask_g1 = gshare.g1_sub - 1;
+                gshare.sub_g = gshare.m1 - gshare.n;
+                gshare.g2_sub = pow(2, gshare.sub_g);
+                gshare.mask_g2 = gshare.g2_sub - 1;
+                gshare.gshare_size = pow(2, gshare.m1);
+                gshare.prediction_table_gshare.resize(gshare.gshare_size);
+
+
+                for (unsigned int i = 0; i < gshare.gshare_size; i++)
+                    {
+                	gshare.prediction_table_gshare[i] = 2;
+                    }
+
+
+
+                trace_file.open(argv[6]);
+                if (trace_file.is_open())
+                {
+                    while (trace_file >> hex >> gshare.program_counter >> gshare.outcome)
+                    {
+                        gshare.gshare_execute();
+
+                    }
+                }
+            }
+        }
+        if (strcmp(argv[1], "gshare") == 0 && (atoi(argv[4]) == 0))
+        {
+            gshare.init = 0;
+            gshare.gshare_print(0);
+        }
+
+        if (argc == 9)
+            {
+                if (strcmp(argv[1], "hybrid") == 0)   //Type : Hybrid Prediction
+                {
+                    hybrid.predictiontype = string(argv[1]);
+                    hybrid.k = atoi(argv[2]);
+                    hybrid.m1 = atoi(argv[3]);
+                    hybrid.n = atoi(argv[4]);
+                    hybrid.m2bimodal = atoi(argv[5]);
+                    hybrid.btbsize = atoi(argv[6]);
+                    hybrid.btbassoc = atoi(argv[7]);
+                    hybrid.trace = string(argv[8]);
+                    hybrid.disp= argv[0] ;
+                    hybrid.disp= hybrid.disp + ' ' + argv[1] + ' ' + argv[2] + ' '+argv[3] + ' '+argv[4] + ' '+argv[5]+ ' '+argv[6]+ ' '+argv[7]+ ' '+argv[8];
+
+                    hybrid.size_b = pow(2, hybrid.m2bimodal);
+                    hybrid.mask= hybrid.size_b - 1;
+                    hybrid.prediction_table_b.resize(hybrid.size_b);
+
+                    for(unsigned int i=0;i<hybrid.size_b;i++)
+                            	        	{
+                            	        		hybrid.prediction_table_b[i]=2;
+                            	        	}
+
+
+                    hybrid.global_register= 0;
+                    hybrid.mask_g1= pow(2, hybrid.m1) - 1;
+                    hybrid.sub_g= hybrid.m1 - hybrid.n;
+                    hybrid.g2_sub= pow(2, hybrid.sub_g);
+                    hybrid.mask_g2= hybrid.g2_sub - 1;
+                    hybrid.gshare_size= pow(2, hybrid.m1);
+                    hybrid.prediction_table_gshare.resize(hybrid.gshare_size);
+                    for (unsigned int i = 0; i < hybrid.gshare_size; i++)
+                                        {
+                                    	hybrid.prediction_table_gshare[i] = 2;
+                                        }
+
+
+                    hybrid.s1= 0;
+                    hybrid.s2= 0;
+                    hybrid.no_predictions = 0;
+                    hybrid.no_mispredictions = 0;
+                    hybrid.size_hybrid = pow(2, hybrid.k);
+                    hybrid.mask_hybrid= hybrid.size_hybrid - 1;
+                    hybrid.prediction_table_h.resize(hybrid.size_hybrid);
+
+                    for (unsigned int i = 0; i < hybrid.size_hybrid; i++)
+                        {
+                    	hybrid.prediction_table_h[i] = 1;
+                        }
+                    trace_file.open(argv[8]);
+                    if (trace_file.is_open())
+                    {
+                        while (trace_file >> hex >> hybrid.program_counter >> hybrid.outcome)
+                        {
+
+                        	hybrid.pc_shift = hybrid.program_counter >> 2;
+                        	hybrid.table_index_bimodal=hybrid.pc_shift & hybrid.mask;
+
+
+                        	hybrid.pc_shift = hybrid.program_counter >> 2;
+                        	hybrid.gshare_pos= hybrid.pc_shift & hybrid.mask_g1;
+                        	hybrid.g_shift= hybrid.gshare_pos>> hybrid.sub_g;
+                        	hybrid.m1_global_reg = hybrid.global_register & hybrid.mask_g1; // m1 bits of global reg
+                        	hybrid.xor_result= hybrid.g_shift ^ hybrid.m1_global_reg;
+                        	hybrid.index_gshare= (hybrid.xor_result << hybrid.sub_g | (hybrid.pc_shift & hybrid.mask_g2));
+
+                        	hybrid.hybrid_execute();
+
+                        }
+                    }
+                }
+            }
+            if (strcmp(argv[1], "hybrid") == 0)
+            {
+                hybrid.hybrid_print();
+                hybrid.gshare_print(1);
+                hybrid.bimodal_print(1);
+            }
+
+
+
+
+trace_file.close();
+return 0;
+}
